@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="SistemaGestionHospitalariaPOO-impl" default="default" basedir="..">
+    <target name="default" depends="jar"/>
+    <target name="init">
+        <property file="nbproject/project.properties"/>
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+    <target name="compile" depends="init">
+        <javac srcdir="${src.dir}" destdir="${build.classes.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="${source.encoding}"/>
+    </target>
+    <target name="jar" depends="compile">
+        <jar destfile="${dist.jar}" basedir="${build.classes.dir}" manifest="${manifest.file}"/>
+    </target>
+    <target name="run" depends="compile">
+        <java classname="${main.class}" classpath="${run.classpath}" fork="true"/>
+    </target>
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+</project>
