@@ -11,6 +11,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField; // <--- Importante para ocultar la contraseña
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -32,12 +33,53 @@ public class VistaMenuPrincipal extends JFrame {
     public VistaMenuPrincipal(SistemaHospitalario sistema) {
         this.sistema = sistema;
 
+        // 1. Mostrar el Login ANTES de cargar la ventana principal
+        if (!mostrarLogin()) {
+            System.exit(0); // Si el usuario cancela o cierra el login, el programa se apaga
+        }
+
+        // 2. Si el login es exitoso, recién se construye la ventana
         setTitle("Sistema Hospitalario");
         setSize(980, 620);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         crearMenu();
     }
+
+    // --- NUEVO MÉTODO: LOGIN EMERGENTE ---
+    private boolean mostrarLogin() {
+        JPanel panelLogin = new JPanel(new GridLayout(2, 2, 5, 5));
+        JTextField txtUsuario = new JTextField();
+        JPasswordField txtClave = new JPasswordField(); // Oculta el texto con asteriscos
+
+        panelLogin.add(new JLabel("Usuario:"));
+        panelLogin.add(txtUsuario);
+        panelLogin.add(new JLabel("Contraseña:"));
+        panelLogin.add(txtClave);
+
+        // Bucle infinito hasta que ponga la clave bien o cancele
+        while (true) {
+            int opcion = JOptionPane.showConfirmDialog(null, panelLogin, 
+                    "Acceso al Sistema", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+            if (opcion == JOptionPane.OK_OPTION) {
+                String usuario = txtUsuario.getText();
+                String clave = new String(txtClave.getPassword());
+
+                // Credenciales de acceso (Puedes cambiarlas aquí)
+                if (usuario.equals("admin") && clave.equals("1234")) {
+                    JOptionPane.showMessageDialog(null, "¡Bienvenido al sistema!");
+                    return true; // Acceso concedido
+                } else {
+                    JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos.", 
+                            "Error de Acceso", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                return false; // Acceso denegado (presionó cancelar o la X)
+            }
+        }
+    }
+    // ------------------------------------
 
     private void crearMenu() {
         JTabbedPane pestanias = new JTabbedPane();
@@ -95,18 +137,57 @@ public class VistaMenuPrincipal extends JFrame {
         panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         btnAgregar.addActionListener(e -> {
+            String cod = txtCodigo.getText().trim();
+            String dni = txtDni.getText().trim();
+            String nom = txtNombres.getText().trim();
+            String ape = txtApellidos.getText().trim();
+            String tel = txtTelefono.getText().trim();
+            String cor = txtCorreo.getText().trim();
+            String dir = txtDireccion.getText().trim();
+            String ed = txtEdad.getText().trim();
+            String gen = txtGenero.getText().trim();
+            String san = txtSangre.getText().trim();
+            String ale = txtAlergias.getText().trim();
+
+            if (!camposEstanLlenos(cod, dni, nom, ape, tel, cor, dir, ed, gen, san, ale)) {
+                JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
+                return;
+            }
+            if (!cod.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "Error: El código debe contener solo números.");
+                return;
+            }
+            if (!dni.matches("\\d{8}")) {
+                JOptionPane.showMessageDialog(this, "Error: El DNI debe tener exactamente 8 dígitos numéricos.");
+                return;
+            }
+            if (!tel.matches("9\\d{8}")) {
+                JOptionPane.showMessageDialog(this, "Error: El teléfono debe tener 9 dígitos y empezar con el número 9.");
+                return;
+            }
+            if (!cor.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                JOptionPane.showMessageDialog(this, "Error: El correo no tiene un formato válido (ejemplo@dominio.com).");
+                return;
+            }
+            if (!ed.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "Error: La edad debe ser un número entero.");
+                return;
+            }
+            
+            int edadAComprobar = Integer.parseInt(ed);
+            if (edadAComprobar < 0 || edadAComprobar > 120) {
+                JOptionPane.showMessageDialog(this, "Error: Ingrese una edad válida (entre 0 y 120).");
+                return;
+            }
+
             try {
-                Paciente paciente = new Paciente(txtCodigo.getText(), txtDni.getText(),
-                        txtNombres.getText(), txtApellidos.getText(), txtTelefono.getText(),
-                        txtCorreo.getText(), txtDireccion.getText(),
-                        Integer.parseInt(txtEdad.getText()), txtGenero.getText(),
-                        txtSangre.getText(), txtAlergias.getText());
+                Paciente paciente = new Paciente(cod, dni, nom, ape, tel, cor, dir, edadAComprobar, gen, san, ale);
                 sistema.getControladorPaciente().agregar(paciente);
                 refrescarPacientes();
-                limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono,
-                        txtCorreo, txtDireccion, txtEdad, txtGenero, txtSangre, txtAlergias);
+                limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono, txtCorreo, txtDireccion, txtEdad, txtGenero, txtSangre, txtAlergias);
+                JOptionPane.showMessageDialog(this, "Paciente registrado exitosamente.");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Revise los datos del paciente.");
+                JOptionPane.showMessageDialog(this, "Ocurrió un error inesperado al registrar el paciente.");
             }
         });
 
@@ -154,14 +235,43 @@ public class VistaMenuPrincipal extends JFrame {
         panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         btnAgregar.addActionListener(e -> {
-            Medico medico = new Medico(txtCodigo.getText(), txtDni.getText(),
-                    txtNombres.getText(), txtApellidos.getText(), txtTelefono.getText(),
-                    txtCorreo.getText(), txtDireccion.getText(), txtEspecialidad.getText(),
-                    txtCmp.getText(), txtHorario.getText());
+            String cod = txtCodigo.getText().trim();
+            String dni = txtDni.getText().trim();
+            String nom = txtNombres.getText().trim();
+            String ape = txtApellidos.getText().trim();
+            String tel = txtTelefono.getText().trim();
+            String cor = txtCorreo.getText().trim();
+            String dir = txtDireccion.getText().trim();
+            String esp = txtEspecialidad.getText().trim();
+            String cmp = txtCmp.getText().trim();
+            String hor = txtHorario.getText().trim();
+
+            if (!camposEstanLlenos(cod, dni, nom, ape, tel, cor, dir, esp, cmp, hor)) {
+                JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
+                return;
+            }
+            if (!cod.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "Error: El código debe contener solo números.");
+                return;
+            }
+            if (!dni.matches("\\d{8}")) {
+                JOptionPane.showMessageDialog(this, "Error: El DNI debe tener exactamente 8 dígitos numéricos.");
+                return;
+            }
+            if (!tel.matches("9\\d{8}")) {
+                JOptionPane.showMessageDialog(this, "Error: El teléfono debe tener 9 dígitos y empezar con el número 9.");
+                return;
+            }
+            if (!cor.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                JOptionPane.showMessageDialog(this, "Error: El correo no tiene un formato válido (ejemplo@dominio.com).");
+                return;
+            }
+
+            Medico medico = new Medico(cod, dni, nom, ape, tel, cor, dir, esp, cmp, hor);
             sistema.getControladorMedico().agregar(medico);
             refrescarMedicos();
-            limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono,
-                    txtCorreo, txtDireccion, txtEspecialidad, txtCmp, txtHorario);
+            limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono, txtCorreo, txtDireccion, txtEspecialidad, txtCmp, txtHorario);
+            JOptionPane.showMessageDialog(this, "Médico registrado exitosamente.");
         });
 
         refrescarMedicos();
@@ -364,4 +474,12 @@ public class VistaMenuPrincipal extends JFrame {
         }
     }
 
+    private boolean camposEstanLlenos(String... valores) {
+        for (String valor : valores) {
+            if (valor == null || valor.trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
