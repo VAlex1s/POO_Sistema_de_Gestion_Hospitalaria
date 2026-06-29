@@ -4,18 +4,22 @@ import controlador.SistemaHospitalario;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField; // <--- Importante para ocultar la contraseña
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import modelo.Cita;
 import modelo.HistorialClinico;
@@ -31,33 +35,40 @@ public class VistaMenuPrincipal extends JFrame {
     private DefaultTableModel modeloHistoriales;
 
     public VistaMenuPrincipal(SistemaHospitalario sistema) {
-        this.sistema = sistema;
-
-        // 1. Mostrar el Login ANTES de cargar la ventana principal
-        if (!mostrarLogin()) {
-            System.exit(0); // Si el usuario cancela o cierra el login, el programa se apaga
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("No se pudo aplicar el tema Nimbus.");
         }
 
-        // 2. Si el login es exitoso, recién se construye la ventana
-        setTitle("Sistema Hospitalario");
-        setSize(980, 620);
+        this.sistema = sistema;
+
+        if (!mostrarLogin()) {
+            System.exit(0);
+        }
+
+        setTitle("Sistema de Gestión Hospitalaria");
+        setSize(980, 650);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         crearMenu();
     }
 
-    // --- NUEVO MÉTODO: LOGIN EMERGENTE ---
     private boolean mostrarLogin() {
         JPanel panelLogin = new JPanel(new GridLayout(2, 2, 5, 5));
         JTextField txtUsuario = new JTextField();
-        JPasswordField txtClave = new JPasswordField(); // Oculta el texto con asteriscos
+        JPasswordField txtClave = new JPasswordField();
 
         panelLogin.add(new JLabel("Usuario:"));
         panelLogin.add(txtUsuario);
         panelLogin.add(new JLabel("Contraseña:"));
         panelLogin.add(txtClave);
 
-        // Bucle infinito hasta que ponga la clave bien o cancele
         while (true) {
             int opcion = JOptionPane.showConfirmDialog(null, panelLogin, 
                     "Acceso al Sistema", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -66,20 +77,17 @@ public class VistaMenuPrincipal extends JFrame {
                 String usuario = txtUsuario.getText();
                 String clave = new String(txtClave.getPassword());
 
-                // Credenciales de acceso (Puedes cambiarlas aquí)
                 if (usuario.equals("admin") && clave.equals("1234")) {
-                    JOptionPane.showMessageDialog(null, "¡Bienvenido al sistema!");
-                    return true; // Acceso concedido
+                    return true;
                 } else {
                     JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos.", 
                             "Error de Acceso", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                return false; // Acceso denegado (presionó cancelar o la X)
+                return false;
             }
         }
     }
-    // ------------------------------------
 
     private void crearMenu() {
         JTabbedPane pestanias = new JTabbedPane();
@@ -98,6 +106,7 @@ public class VistaMenuPrincipal extends JFrame {
     private JPanel crearPanelPacientes() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel formulario = new JPanel(new GridLayout(12, 1, 5, 5));
+        formulario.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
 
         JTextField txtCodigo = new JTextField();
         JTextField txtDni = new JTextField();
@@ -107,10 +116,28 @@ public class VistaMenuPrincipal extends JFrame {
         JTextField txtCorreo = new JTextField();
         JTextField txtDireccion = new JTextField();
         JTextField txtEdad = new JTextField();
-        JTextField txtGenero = new JTextField();
-        JTextField txtSangre = new JTextField();
+        JComboBox<String> cboGenero = new JComboBox<>(new String[]{"Seleccione", "Masculino", "Femenino", "Otro"});
+        JComboBox<String> cboSangre = new JComboBox<>(new String[]{"Seleccione", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"});
         JTextField txtAlergias = new JTextField();
         JButton btnAgregar = new JButton("Agregar paciente");
+
+        txtDni.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) || txtDni.getText().length() >= 8) e.consume();
+            }
+        });
+
+        txtTelefono.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) || txtTelefono.getText().length() >= 9) e.consume();
+            }
+        });
+
+        txtEdad.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) || txtEdad.getText().length() >= 3) e.consume();
+            }
+        });
 
         agregarCampo(formulario, "Codigo:", txtCodigo);
         agregarCampo(formulario, "DNI:", txtDni);
@@ -120,8 +147,8 @@ public class VistaMenuPrincipal extends JFrame {
         agregarCampo(formulario, "Correo:", txtCorreo);
         agregarCampo(formulario, "Direccion:", txtDireccion);
         agregarCampo(formulario, "Edad:", txtEdad);
-        agregarCampo(formulario, "Genero:", txtGenero);
-        agregarCampo(formulario, "Tipo sangre:", txtSangre);
+        agregarCampo(formulario, "Genero:", cboGenero);
+        agregarCampo(formulario, "Tipo sangre:", cboSangre);
         agregarCampo(formulario, "Alergias:", txtAlergias);
         formulario.add(btnAgregar);
 
@@ -145,49 +172,46 @@ public class VistaMenuPrincipal extends JFrame {
             String cor = txtCorreo.getText().trim();
             String dir = txtDireccion.getText().trim();
             String ed = txtEdad.getText().trim();
-            String gen = txtGenero.getText().trim();
-            String san = txtSangre.getText().trim();
+            String gen = cboGenero.getSelectedItem().toString();
+            String san = cboSangre.getSelectedItem().toString();
             String ale = txtAlergias.getText().trim();
 
-            if (!camposEstanLlenos(cod, dni, nom, ape, tel, cor, dir, ed, gen, san, ale)) {
+            if (gen.equals("Seleccione") || san.equals("Seleccione")) {
+                JOptionPane.showMessageDialog(this, "Error: Debe seleccionar un género y un tipo de sangre.");
+                return;
+            }
+
+            if (!camposEstanLlenos(cod, dni, nom, ape, tel, cor, dir, ed, ale)) {
                 JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
                 return;
             }
-            if (!cod.matches("\\d+")) {
-                JOptionPane.showMessageDialog(this, "Error: El código debe contener solo números.");
+
+            if (sistema.getControladorPaciente().buscarPorCodigo(cod) != null) {
+                JOptionPane.showMessageDialog(this, "Error: Ya existe un paciente con el código " + cod);
                 return;
             }
-            if (!dni.matches("\\d{8}")) {
-                JOptionPane.showMessageDialog(this, "Error: El DNI debe tener exactamente 8 dígitos numéricos.");
-                return;
-            }
+
             if (!tel.matches("9\\d{8}")) {
-                JOptionPane.showMessageDialog(this, "Error: El teléfono debe tener 9 dígitos y empezar con el número 9.");
+                JOptionPane.showMessageDialog(this, "Error: El teléfono debe empezar con 9.");
                 return;
             }
+
             if (!cor.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
-                JOptionPane.showMessageDialog(this, "Error: El correo no tiene un formato válido (ejemplo@dominio.com).");
-                return;
-            }
-            if (!ed.matches("\\d+")) {
-                JOptionPane.showMessageDialog(this, "Error: La edad debe ser un número entero.");
-                return;
-            }
-            
-            int edadAComprobar = Integer.parseInt(ed);
-            if (edadAComprobar < 0 || edadAComprobar > 120) {
-                JOptionPane.showMessageDialog(this, "Error: Ingrese una edad válida (entre 0 y 120).");
+                JOptionPane.showMessageDialog(this, "Error: Formato de correo inválido.");
                 return;
             }
 
             try {
+                int edadAComprobar = Integer.parseInt(ed);
                 Paciente paciente = new Paciente(cod, dni, nom, ape, tel, cor, dir, edadAComprobar, gen, san, ale);
                 sistema.getControladorPaciente().agregar(paciente);
                 refrescarPacientes();
-                limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono, txtCorreo, txtDireccion, txtEdad, txtGenero, txtSangre, txtAlergias);
+                limpiar(txtCodigo, txtDni, txtNombres, txtApellidos, txtTelefono, txtCorreo, txtDireccion, txtEdad, txtAlergias);
+                cboGenero.setSelectedIndex(0);
+                cboSangre.setSelectedIndex(0);
                 JOptionPane.showMessageDialog(this, "Paciente registrado exitosamente.");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Ocurrió un error inesperado al registrar el paciente.");
+                JOptionPane.showMessageDialog(this, "Error al registrar el paciente.");
             }
         });
 
@@ -198,6 +222,7 @@ public class VistaMenuPrincipal extends JFrame {
     private JPanel crearPanelMedicos() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel formulario = new JPanel(new GridLayout(11, 1, 5, 5));
+        formulario.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
 
         JTextField txtCodigo = new JTextField();
         JTextField txtDni = new JTextField();
@@ -210,6 +235,18 @@ public class VistaMenuPrincipal extends JFrame {
         JTextField txtCmp = new JTextField();
         JTextField txtHorario = new JTextField();
         JButton btnAgregar = new JButton("Agregar medico");
+
+        txtDni.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) || txtDni.getText().length() >= 8) e.consume();
+            }
+        });
+
+        txtTelefono.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) || txtTelefono.getText().length() >= 9) e.consume();
+            }
+        });
 
         agregarCampo(formulario, "Codigo:", txtCodigo);
         agregarCampo(formulario, "DNI:", txtDni);
@@ -250,20 +287,19 @@ public class VistaMenuPrincipal extends JFrame {
                 JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
                 return;
             }
-            if (!cod.matches("\\d+")) {
-                JOptionPane.showMessageDialog(this, "Error: El código debe contener solo números.");
+
+            if (sistema.getControladorMedico().buscarPorCodigo(cod) != null) {
+                JOptionPane.showMessageDialog(this, "Error: Ya existe un médico con el código " + cod);
                 return;
             }
-            if (!dni.matches("\\d{8}")) {
-                JOptionPane.showMessageDialog(this, "Error: El DNI debe tener exactamente 8 dígitos numéricos.");
-                return;
-            }
+
             if (!tel.matches("9\\d{8}")) {
-                JOptionPane.showMessageDialog(this, "Error: El teléfono debe tener 9 dígitos y empezar con el número 9.");
+                JOptionPane.showMessageDialog(this, "Error: El teléfono debe empezar con 9.");
                 return;
             }
+
             if (!cor.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
-                JOptionPane.showMessageDialog(this, "Error: El correo no tiene un formato válido (ejemplo@dominio.com).");
+                JOptionPane.showMessageDialog(this, "Error: Formato de correo inválido.");
                 return;
             }
 
@@ -281,6 +317,7 @@ public class VistaMenuPrincipal extends JFrame {
     private JPanel crearPanelCitas() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel formulario = new JPanel(new GridLayout(8, 1, 5, 5));
+        formulario.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
 
         JTextField txtCodigo = new JTextField();
         JTextField txtPaciente = new JTextField();
@@ -288,16 +325,13 @@ public class VistaMenuPrincipal extends JFrame {
         JTextField txtFecha = new JTextField();
         JTextField txtHora = new JTextField();
         JTextField txtMotivo = new JTextField();
-        JComboBox<String> cboEstado = new JComboBox<String>();
-        cboEstado.addItem("Pendiente");
-        cboEstado.addItem("Atendida");
-        cboEstado.addItem("Cancelada");
+        JComboBox<String> cboEstado = new JComboBox<>(new String[]{"Pendiente", "Atendida", "Cancelada"});
         JButton btnAgregar = new JButton("Registrar cita");
 
         agregarCampo(formulario, "Codigo:", txtCodigo);
         agregarCampo(formulario, "Cod. paciente:", txtPaciente);
         agregarCampo(formulario, "Cod. medico:", txtMedico);
-        agregarCampo(formulario, "Fecha:", txtFecha);
+        agregarCampo(formulario, "Fecha (DD/MM/AAAA):", txtFecha);
         agregarCampo(formulario, "Hora:", txtHora);
         agregarCampo(formulario, "Motivo:", txtMotivo);
         agregarCampo(formulario, "Estado:", cboEstado);
@@ -316,19 +350,26 @@ public class VistaMenuPrincipal extends JFrame {
         panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         btnAgregar.addActionListener(e -> {
-            Paciente paciente = sistema.getControladorPaciente().buscarPorCodigo(txtPaciente.getText());
-            Medico medico = sistema.getControladorMedico().buscarPorCodigo(txtMedico.getText());
+            if (!camposEstanLlenos(txtCodigo.getText(), txtPaciente.getText(), txtMedico.getText(), txtFecha.getText(), txtHora.getText(), txtMotivo.getText())) {
+                JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
+                return;
+            }
+
+            Paciente paciente = sistema.getControladorPaciente().buscarPorCodigo(txtPaciente.getText().trim());
+            Medico medico = sistema.getControladorMedico().buscarPorCodigo(txtMedico.getText().trim());
 
             if (paciente == null || medico == null) {
                 JOptionPane.showMessageDialog(this, "Paciente o medico no encontrado.");
                 return;
             }
 
-            Cita cita = new Cita(txtCodigo.getText(), paciente, medico, txtFecha.getText(),
-                    txtHora.getText(), txtMotivo.getText(), cboEstado.getSelectedItem().toString());
+            Cita cita = new Cita(txtCodigo.getText().trim(), paciente, medico, txtFecha.getText().trim(),
+                    txtHora.getText().trim(), txtMotivo.getText().trim(), cboEstado.getSelectedItem().toString());
             sistema.getControladorCita().agregar(cita);
             refrescarCitas();
             limpiar(txtCodigo, txtPaciente, txtMedico, txtFecha, txtHora, txtMotivo);
+            cboEstado.setSelectedIndex(0);
+            JOptionPane.showMessageDialog(this, "Cita registrada exitosamente.");
         });
 
         refrescarCitas();
@@ -338,6 +379,7 @@ public class VistaMenuPrincipal extends JFrame {
     private JPanel crearPanelHistorial() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel formulario = new JPanel(new GridLayout(8, 1, 5, 5));
+        formulario.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
 
         JTextField txtCodigo = new JTextField();
         JTextField txtPaciente = new JTextField();
@@ -369,21 +411,26 @@ public class VistaMenuPrincipal extends JFrame {
         panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         btnAgregar.addActionListener(e -> {
-            Paciente paciente = sistema.getControladorPaciente().buscarPorCodigo(txtPaciente.getText());
-            Medico medico = sistema.getControladorMedico().buscarPorCodigo(txtMedico.getText());
+            if (!camposEstanLlenos(txtCodigo.getText(), txtPaciente.getText(), txtMedico.getText(), txtFecha.getText(), txtDiagnostico.getText(), txtTratamiento.getText(), txtObservaciones.getText())) {
+                JOptionPane.showMessageDialog(this, "Error: Todos los campos son obligatorios.");
+                return;
+            }
+
+            Paciente paciente = sistema.getControladorPaciente().buscarPorCodigo(txtPaciente.getText().trim());
+            Medico medico = sistema.getControladorMedico().buscarPorCodigo(txtMedico.getText().trim());
 
             if (paciente == null || medico == null) {
                 JOptionPane.showMessageDialog(this, "Paciente o medico no encontrado.");
                 return;
             }
 
-            HistorialClinico historial = new HistorialClinico(txtCodigo.getText(),
-                    paciente, medico, txtFecha.getText(), txtDiagnostico.getText(),
-                    txtTratamiento.getText(), txtObservaciones.getText());
+            HistorialClinico historial = new HistorialClinico(txtCodigo.getText().trim(),
+                    paciente, medico, txtFecha.getText().trim(), txtDiagnostico.getText().trim(),
+                    txtTratamiento.getText().trim(), txtObservaciones.getText().trim());
             sistema.getControladorHistorial().agregar(historial);
             refrescarHistoriales();
-            limpiar(txtCodigo, txtPaciente, txtMedico, txtFecha,
-                    txtDiagnostico, txtTratamiento, txtObservaciones);
+            limpiar(txtCodigo, txtPaciente, txtMedico, txtFecha, txtDiagnostico, txtTratamiento, txtObservaciones);
+            JOptionPane.showMessageDialog(this, "Historial registrado exitosamente.");
         });
 
         refrescarHistoriales();
@@ -397,7 +444,7 @@ public class VistaMenuPrincipal extends JFrame {
     private void agregarCampo(JPanel panel, String texto, JComponent campo) {
         JPanel fila = new JPanel(new BorderLayout(8, 0));
         JLabel etiqueta = new JLabel(texto);
-        etiqueta.setPreferredSize(new Dimension(120, 24));
+        etiqueta.setPreferredSize(new Dimension(140, 24));
         fila.add(etiqueta, BorderLayout.WEST);
         fila.add(campo, BorderLayout.CENTER);
         panel.add(fila);
@@ -410,14 +457,12 @@ public class VistaMenuPrincipal extends JFrame {
     }
 
     private void refrescarPacientes() {
-        if (modeloPacientes == null) {
-            return;
-        }
+        if (modeloPacientes == null) return;
         modeloPacientes.setRowCount(0);
         for (Paciente paciente : sistema.getControladorPaciente().listar()) {
             modeloPacientes.addRow(new Object[]{
                 paciente.getCodigoPaciente(),
-                paciente.getNombreCompleto(),
+                paciente.getNombres() + " " + paciente.getApellidos(),
                 paciente.getEdad(),
                 paciente.getGenero(),
                 paciente.getTipoSangre()
@@ -426,14 +471,12 @@ public class VistaMenuPrincipal extends JFrame {
     }
 
     private void refrescarMedicos() {
-        if (modeloMedicos == null) {
-            return;
-        }
+        if (modeloMedicos == null) return;
         modeloMedicos.setRowCount(0);
         for (Medico medico : sistema.getControladorMedico().listar()) {
             modeloMedicos.addRow(new Object[]{
                 medico.getCodigoMedico(),
-                medico.getNombreCompleto(),
+                medico.getNombres() + " " + medico.getApellidos(),
                 medico.getEspecialidad(),
                 medico.getCmp(),
                 medico.getHorario()
@@ -442,15 +485,13 @@ public class VistaMenuPrincipal extends JFrame {
     }
 
     private void refrescarCitas() {
-        if (modeloCitas == null) {
-            return;
-        }
+        if (modeloCitas == null) return;
         modeloCitas.setRowCount(0);
         for (Cita cita : sistema.getControladorCita().listar()) {
             modeloCitas.addRow(new Object[]{
                 cita.getCodigoCita(),
-                cita.getPaciente().getNombreCompleto(),
-                cita.getMedico().getNombreCompleto(),
+                cita.getPaciente().getNombres() + " " + cita.getPaciente().getApellidos(),
+                cita.getMedico().getNombres() + " " + cita.getMedico().getApellidos(),
                 cita.getFecha(),
                 cita.getHora(),
                 cita.getEstado()
@@ -459,15 +500,13 @@ public class VistaMenuPrincipal extends JFrame {
     }
 
     private void refrescarHistoriales() {
-        if (modeloHistoriales == null) {
-            return;
-        }
+        if (modeloHistoriales == null) return;
         modeloHistoriales.setRowCount(0);
         for (HistorialClinico historial : sistema.getControladorHistorial().listar()) {
             modeloHistoriales.addRow(new Object[]{
                 historial.getCodigoHistorial(),
-                historial.getPaciente().getNombreCompleto(),
-                historial.getMedico().getNombreCompleto(),
+                historial.getPaciente().getNombres() + " " + historial.getPaciente().getApellidos(),
+                historial.getMedico().getNombres() + " " + historial.getMedico().getApellidos(),
                 historial.getFechaRegistro(),
                 historial.getDiagnostico()
             });
